@@ -1,9 +1,12 @@
 package com.example.productcatalogservice.controllers;
 
-import com.example.productcatalogservice.models.Product;
 import com.example.productcatalogservice.dtos.ProductDto;
+import com.example.productcatalogservice.models.Product;
 import com.example.productcatalogservice.services.IProductService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -17,10 +20,14 @@ class ProductControllerTest {
     @Autowired
     private ProductController productController;
 
-    @Autowired
+    @MockBean
     private IProductService productService;
 
+    @Captor
+    private ArgumentCaptor<Long> idCaptor;
+
     @Test
+    @DisplayName("get product with id 4 will run fine")
     public void Test_GetProductById_ReturnsProductSuccessfully() {
         //Arrange
         Long productId = 4L;
@@ -40,4 +47,35 @@ class ProductControllerTest {
         assertEquals("Iphone",response.getBody().getName());
         verify(productService,times(1)).getProductById(productId);
     }
+
+
+    @Test
+    public void Test_GetProductById_CalledWithInvalidId_ResultsInIllegalArgumentException() {
+
+        //Act and Assert
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> productController.findProductById(-1L));
+
+        assertEquals("Please try with productId > 0",exception.getMessage());
+        //verify(productService,times(0)).getProductById(-1L);
+    }
+
+    @Test
+    public void Test_GetProductById_ProductServiceCalledWithCorrectArguments_RunSuccessfully() {
+        //Arrange
+        Long productId = 4L;
+        Product product = new Product();
+        product.setId(productId);
+        product.setName("Iphone");
+        when(productService.getProductById(productId)).thenReturn(product);
+
+
+        //Act
+        productController.findProductById(productId);
+
+        //Assert
+        verify(productService).getProductById(idCaptor.capture());
+        assertEquals(4L,idCaptor.getValue());
+    }
+
 }
